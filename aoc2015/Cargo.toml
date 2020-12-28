@@ -1,0 +1,18 @@
+[package]
+name = "aoc2015"
+version = "0.1.0"
+authors = ["Stefan Seemayer <stefan@seemayer.de>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+failure = "0.1.6"
+md5 = "0.7.0"
+serde = "1.0.104"
+serde_json = "1.0.44"
+permutohedron = "0.2.4"
+itertools = "0.9.0"
+num-format = "0.4.0"
+integer-sqrt = "0.1.2"
+lazy_static = "1.4.0"

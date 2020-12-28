@@ -1,0 +1,9 @@
+not_space = _{ !(" " | NEWLINE) ~ ANY }
+value = { not_space+ }
+tag = { ASCII_ALPHA{3} }
+
+field = { tag ~ ":" ~ value }
+
+passport = { field ~ (( NEWLINE | " " ) ~ field)* }
+
+file = { SOI ~ passport ~ ( NEWLINE+ ~ passport )* ~ NEWLINE* ~ EOI }

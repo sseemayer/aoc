@@ -1,0 +1,39 @@
+        cpy a d		d = a
+        cpy 11 c	c = 11
+'b:     cpy 231 b	b = 231
+'a:     inc d		d += 231 * 11; b = 0; c = 0
+        dec b		|
+        jnz b 'a    |
+        dec c       |
+        jnz c 'b    |
+
+	    checkpoint:
+	    	a = user input
+	    	b = 0
+	    	c = 0
+	    	d = 231 * 11
+
+'e:     cpy d a		a = 231 * 11
+'f:     cpy a b		b = a
+        cpy 0 a		a = 0
+'c:     cpy 2 c		c = 2
+'d:     jnz b 'k   
+        jnz 1 'j     
+
+'k:     dec b
+        dec c
+        jnz c 'd
+        inc a
+        jnz 1 'c
+
+'j:     cpy 2 b     b = 2					b = 2 - c
+'g:     jnz c 'i    while c != 0 {          |
+        jnz 1 'out     b--, c--             |
+                    }                       |
+'i:     dec b                               |
+        dec c                               |
+        jnz 1 'g                            |
+
+'out:   out b
+        jnz a 'f
+        jnz 1 'e

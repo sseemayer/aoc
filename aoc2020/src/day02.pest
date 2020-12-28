@@ -1,0 +1,7 @@
+count = { ASCII_DIGIT+ }
+range = { count ~ "-" ~ count }
+
+letter = { ASCII_ALPHA }
+password = { ASCII_ALPHA+ }
+
+policy = { SOI ~ range ~ " " ~ letter ~ ": " ~ password ~ EOI }

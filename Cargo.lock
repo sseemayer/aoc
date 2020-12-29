@@ -61,6 +61,7 @@ dependencies = [
 name = "aoc2017"
 version = "0.1.0"
 dependencies = [
+ "aoc 0.1.0",
  "snafu 0.6.10 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

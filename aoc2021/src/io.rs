@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use std::{
     fs::File,
-    io::{BufRead, BufReader},
+    io::{BufRead, BufReader, Read},
     str::FromStr,
 };
 
@@ -22,8 +22,20 @@ pub fn read_lines<T: FromStr>(path: &str) -> Result<Vec<T>, ReadLinesError<T>>
 where
     <T as FromStr>::Err: std::fmt::Debug + std::fmt::Display + std::error::Error,
 {
-    let reader = BufReader::new(File::open(path)?);
+    read_lines_reader(File::open(path)?)
+}
 
+pub fn read_lines_reader<T: FromStr, R: Read>(r: R) -> Result<Vec<T>, ReadLinesError<T>>
+where
+    <T as FromStr>::Err: std::fmt::Debug + std::fmt::Display + std::error::Error,
+{
+    read_lines_bufreader(BufReader::new(r))
+}
+
+pub fn read_lines_bufreader<T: FromStr, R: BufRead>(reader: R) -> Result<Vec<T>, ReadLinesError<T>>
+where
+    <T as FromStr>::Err: std::fmt::Debug + std::fmt::Display + std::error::Error,
+{
     reader
         .lines()
         .filter_map(|l| {

@@ -18,6 +18,14 @@ where
     Parse(<T as FromStr>::Err),
 }
 
+pub fn read_all(path: &str) -> Result<String, std::io::Error> {
+    let mut file = File::open(path)?;
+    let mut buf = String::new();
+    file.read_to_string(&mut buf)?;
+
+    Ok(buf)
+}
+
 pub fn read_lines<T: FromStr>(path: &str) -> Result<Vec<T>, ReadLinesError<T>>
 where
     <T as FromStr>::Err: std::fmt::Debug + std::fmt::Display + std::error::Error,

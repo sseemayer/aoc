@@ -24,7 +24,7 @@ struct Tile(bool);
 
 impl std::fmt::Display for Tile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", if self.0 { 'X' } else { ' ' })
+        write!(f, "{}", if self.0 { '█' } else { ' ' })
     }
 }
 

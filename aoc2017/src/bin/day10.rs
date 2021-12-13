@@ -20,133 +20,87 @@ enum Error {
 
 #[derive(Debug)]
 struct State {
-    next: HashMap<u16, u16>,
-    prev: HashMap<u16, u16>,
+    numbers: Vec<u8>,
 
-    current: u16,
-    first: u16,
+    current: usize,
     skip_size: usize,
 }
 
 impl std::fmt::Display for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "forward: ")?;
-        self.write_number(self.first, f)?;
+        write!(f, "[")?;
 
-        let mut cur = self.next[&self.first];
-        while cur != self.first {
-            write!(f, " -> ")?;
-            self.write_number(cur, f)?;
-
-            cur = self.next[&cur];
+        for (i, n) in self.numbers.iter().enumerate() {
+            if i > 0 {
+                write!(f, " ")?;
+            }
+            self.write_number(*n, f)?;
         }
-        write!(f, " (-> ")?;
-        self.write_number(self.first, f)?;
 
-        write!(f, ")\nreverse: ")?;
-
-        self.write_number(self.first, f)?;
-
-        let mut cur = self.prev[&self.first];
-        while cur != self.first {
-            write!(f, " -> ")?;
-            self.write_number(cur, f)?;
-
-            cur = self.prev[&cur];
-        }
-        write!(f, " (-> ")?;
-        self.write_number(self.first, f)?;
-
-        write!(f, ")\nskip_size={}", self.skip_size)?;
+        write!(f, "] skip_size={}", self.skip_size)?;
         Ok(())
     }
 }
 
 impl State {
     fn new(n_numbers: usize) -> Self {
-        let mut next: HashMap<u16, u16> = HashMap::with_capacity(n_numbers);
-        let mut prev: HashMap<u16, u16> = HashMap::with_capacity(n_numbers);
-        for i in 0..n_numbers {
-            let j = (i + 1) % n_numbers;
-            next.insert(i as u16, j as u16);
-            prev.insert(j as u16, i as u16);
-        }
+        let numbers = (0..n_numbers).map(|n| n as u8).collect();
 
         State {
-            next,
-            prev,
+            numbers,
 
             skip_size: 0,
             current: 0,
-            first: 0,
         }
     }
 
-    fn skip_forward(&self, from: u16, by: usize) -> u16 {
-        let mut current = from;
-        for _ in 0..by {
-            current = self.next[&current];
+    fn from_str(s: &str) -> Self {
+        let numbers = s.as_bytes().to_vec();
+        State {
+            numbers,
+
+            skip_size: 0,
+            current: 0,
         }
-        current
     }
 
-    fn write_number(&self, n: u16, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if n == self.current {
+    fn step(&mut self, length: usize) {
+        let n = self.numbers.len();
+
+        for i in 0..(length / 2) {
+            let a = (self.current + i) % n;
+            let b = (self.current + length - i - 1) % n;
+            // println!("swap {} {}", a, b);
+            self.numbers.swap(a, b);
+        }
+
+        self.current = (self.current + length + self.skip_size) % n;
+
+        // increase skip size
+        self.skip_size += 1;
+    }
+
+    fn write_number(&self, n: u8, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        if self.numbers[self.current] == n {
             write!(f, "{}", format!("{}", n).green())
         } else {
             write!(f, "{}", n)
         }
     }
 
-    fn step(&mut self, length: usize) {
-        let pinch_start = self.current;
-        let pinch_prev = self.prev[&pinch_start];
-        let pinch_end = self.skip_forward(pinch_start, length);
-        let pinch_last = self.prev[&pinch_end];
-
-        // reverse from pinch_start to pinch_end, not including pinch_end
-
-        //   ps  le
-        // 0123456789
-        //   265437
-        //   pl  se
-
-        let mut current = pinch_start;
-        loop {
-            let temp = self.prev[&current];
-            self.prev.insert(current, self.next[&current]);
-            self.next.insert(current, temp);
-
-            if current == pinch_last {
-                break;
-            }
-
-            current = self.prev[&current];
-        }
-
-        if pinch_start != pinch_end {
-            self.next.insert(pinch_prev, pinch_last);
-            self.prev.insert(pinch_last, pinch_prev);
-
-            self.next.insert(pinch_start, pinch_end);
-            self.prev.insert(pinch_end, pinch_start);
-
-            self.current = self.skip_forward(pinch_end, self.skip_size);
-        } else {
-            self.next.insert(pinch_start, pinch_last);
-            self.prev.insert(pinch_last, pinch_start);
-
-            self.current = self.skip_forward(pinch_last, self.skip_size);
-        }
-
-        // increase skip size
-        self.skip_size += 1;
+    fn hash(&self) -> String {
+        self.numbers
+            .chunks(16)
+            .map(|c| c.iter().fold(0, |a, b| a ^ *b))
+            .map(|c| format!("{:02x}", c))
+            .collect()
     }
 }
 
 fn main() -> Result<()> {
-    let lengths: Vec<usize> = std::fs::read_to_string("data/day10/input")
-        .context(Io)?
+    let input = std::fs::read_to_string("data/day10/input").context(Io)?;
+
+    let lengths: Vec<usize> = input
         .split(",")
         .map(|n| {
             n.trim().parse().context(ParseInt {
@@ -155,7 +109,7 @@ fn main() -> Result<()> {
         })
         .collect::<Result<_>>()?;
 
-    let lengths = vec![3, 4, 1, 5];
+    // let lengths = vec![3, 4, 1, 5];
 
     // step length input             output         new skip
     // 1    3      ([0] 1 2) 3 4     2 1 0 [3] 4    1
@@ -164,28 +118,28 @@ fn main() -> Result<()> {
     // 4    5      4) ([3] 0 1 2     3 4 2 1 [0]    4
     //
 
-    let mut state = State::new(5);
-    println!("{}", state);
+    let mut state = State::new(256);
     for l in &lengths {
-        println!("STEP {}", l);
         state.step(*l);
-        println!("{}", state);
     }
 
-    let first = state.current;
-    let next = state.next[&first];
+    println!(
+        "Part 1: {}",
+        state.numbers[0] as usize * state.numbers[1] as usize
+    );
 
-    println!("Part 1: {}", first * next);
+    let mut state = State::new(256);
+    let mut lengths: Vec<usize> = input.trim().bytes().map(|b| b as usize).collect();
+    lengths.extend(vec![17, 31, 73, 47, 23]);
+
+    for _round in 0..64 {
+        for l in &lengths {
+            state.step(*l);
+        }
+    }
+
+    let hash = state.hash();
+    println!("Part 2: {}", hash);
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() -> Result<()> {
-        Ok(())
-    }
 }

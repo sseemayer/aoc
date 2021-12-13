@@ -1,5 +1,5 @@
 use aoc2021::io::{read_lines, ReadLinesError};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -135,13 +135,6 @@ impl Graph {
         }
 
         solutions
-    }
-
-    fn format_path(&self, p: &[usize]) -> String {
-        p.iter()
-            .map(|p| self.idx_to_name[*p].clone())
-            .collect::<Vec<String>>()
-            .join(",")
     }
 }
 

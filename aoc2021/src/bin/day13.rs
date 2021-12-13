@@ -1,6 +1,5 @@
 use aoc::map::Map;
 use aoc2021::io::{read_lines, ReadLinesError};
-use std::collections::{HashMap, HashSet, VecDeque};
 use thiserror::Error;
 
 #[derive(Debug)]

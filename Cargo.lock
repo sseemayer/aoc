@@ -67,6 +67,7 @@ name = "aoc2017"
 version = "0.1.0"
 dependencies = [
  "aoc",
+ "colored",
  "lazy_static",
  "regex",
  "snafu",

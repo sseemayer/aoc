@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use snafu::{ResultExt, Snafu};
 
+use colored::Colorize;
+
 type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Snafu)]
@@ -18,124 +20,127 @@ enum Error {
 
 #[derive(Debug)]
 struct State {
-    next: HashMap<usize, usize>,
-    prev: HashMap<usize, usize>,
+    next: HashMap<u16, u16>,
+    prev: HashMap<u16, u16>,
 
-    first: usize,
-    skip: usize,
-    current: usize,
+    current: u16,
+    first: u16,
+    skip_size: usize,
 }
 
 impl std::fmt::Display for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, " forward: [{}]", self.current)?;
+        write!(f, "forward: ")?;
+        self.write_number(self.first, f)?;
 
-        let mut cur = self.next[&self.current];
-        while cur != self.current {
-            write!(f, " -> {}", cur)?;
+        let mut cur = self.next[&self.first];
+        while cur != self.first {
+            write!(f, " -> ")?;
+            self.write_number(cur, f)?;
+
             cur = self.next[&cur];
         }
-        write!(f, " (-> {})", cur)?;
+        write!(f, " (-> ")?;
+        self.write_number(self.first, f)?;
 
-        write!(f, "\nbackward: [{}]", self.current)?;
+        write!(f, ")\nreverse: ")?;
 
-        let mut cur = self.prev[&self.current];
-        while cur != self.current {
-            write!(f, " -> {}", cur)?;
+        self.write_number(self.first, f)?;
+
+        let mut cur = self.prev[&self.first];
+        while cur != self.first {
+            write!(f, " -> ")?;
+            self.write_number(cur, f)?;
+
             cur = self.prev[&cur];
         }
-        write!(f, " (-> {})", cur)?;
+        write!(f, " (-> ")?;
+        self.write_number(self.first, f)?;
 
-        write!(f, "\nskip={}, first={}", self.skip, self.first)?;
+        write!(f, ")\nskip_size={}", self.skip_size)?;
         Ok(())
     }
 }
 
 impl State {
     fn new(n_numbers: usize) -> Self {
-        let mut next: HashMap<usize, usize> = HashMap::with_capacity(n_numbers);
-        let mut prev: HashMap<usize, usize> = HashMap::with_capacity(n_numbers);
+        let mut next: HashMap<u16, u16> = HashMap::with_capacity(n_numbers);
+        let mut prev: HashMap<u16, u16> = HashMap::with_capacity(n_numbers);
         for i in 0..n_numbers {
-            next.insert(i, (i + 1) % n_numbers);
-            prev.insert((i + 1) % n_numbers, i);
+            let j = (i + 1) % n_numbers;
+            next.insert(i as u16, j as u16);
+            prev.insert(j as u16, i as u16);
         }
 
         State {
             next,
             prev,
-            first: 0,
-            skip: 0,
+
+            skip_size: 0,
             current: 0,
+            first: 0,
         }
     }
 
-    fn skip_forward(&self, from: usize, amount: usize) -> usize {
+    fn skip_forward(&self, from: u16, by: usize) -> u16 {
         let mut current = from;
-        for _ in 1..amount {
+        for _ in 0..by {
             current = self.next[&current];
         }
         current
     }
 
-    fn link(&mut self, from: usize, to: usize) {
-        println!("set {} -> {}", from, to);
-        self.next.insert(from, to);
-        self.prev.insert(to, from);
-    }
-
-    fn reverse(&mut self, from: usize, to: usize) {
-        //f0
-        // 01
-        //  12
-        //   23
-        //    34
-        //     4t
-        //
-        //     0f
-        //    10
-        //   21
-        //  32
-        // 43
-        //t4
-
-        let mut last = from;
-        let mut current = self.next[&from];
-        while current != to {
-            let next = self.next[&current];
-            self.link(current, last);
-            last = current;
-            current = next;
+    fn write_number(&self, n: u16, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if n == self.current {
+            write!(f, "{}", format!("{}", n).green())
+        } else {
+            write!(f, "{}", n)
         }
-        self.link(current, last);
     }
 
     fn step(&mut self, length: usize) {
-        //  /-l-\
-        // bc012de
-        // bd210ce
+        let pinch_start = self.current;
+        let pinch_prev = self.prev[&pinch_start];
+        let pinch_end = self.skip_forward(pinch_start, length);
+        let pinch_last = self.prev[&pinch_end];
 
-        let b = self.prev[&self.current];
-        let c = self.current;
+        // reverse from pinch_start to pinch_end, not including pinch_end
 
-        let d = self.skip_forward(c, length);
-        let e = self.next[&d];
+        //   ps  le
+        // 0123456789
+        //   265437
+        //   pl  se
 
-        println!("b={} c={} d={} e={}", b, c, d, e);
+        let mut current = pinch_start;
+        loop {
+            let temp = self.prev[&current];
+            self.prev.insert(current, self.next[&current]);
+            self.next.insert(current, temp);
 
-        if c == d {
-            // don't do anything for lists of 1
-        } else if c != e {
-            // we are in a proper sublist
-            self.reverse(c, d);
-            self.link(b, d);
-            self.link(c, e);
-        } else {
-            // we are in a loop around c
-            self.reverse(c, c);
+            if current == pinch_last {
+                break;
+            }
+
+            current = self.prev[&current];
         }
 
-        self.current = self.skip_forward(e, self.skip);
-        self.skip += 1;
+        if pinch_start != pinch_end {
+            self.next.insert(pinch_prev, pinch_last);
+            self.prev.insert(pinch_last, pinch_prev);
+
+            self.next.insert(pinch_start, pinch_end);
+            self.prev.insert(pinch_end, pinch_start);
+
+            self.current = self.skip_forward(pinch_end, self.skip_size);
+        } else {
+            self.next.insert(pinch_start, pinch_last);
+            self.prev.insert(pinch_last, pinch_start);
+
+            self.current = self.skip_forward(pinch_last, self.skip_size);
+        }
+
+        // increase skip size
+        self.skip_size += 1;
     }
 }
 
@@ -152,12 +157,12 @@ fn main() -> Result<()> {
 
     let lengths = vec![3, 4, 1, 5];
 
-    // ([0] 1 2) 3 4
-    // ([3] 4 2 1) 0
-    // ([3] 0 1 2 4)
-    // ([2]) 4 3 0 1
-    // ([3] 0 1 2 4)
-    // 3 4 2 1 [0]
+    // step length input             output         new skip
+    // 1    3      ([0] 1 2) 3 4     2 1 0 [3] 4    1
+    // 2    4      2 1) 0 ([3] 4     4 3 0 [1] 2    2
+    // 3    1      4 3 0 ([1]) 2     4 [3] 0 1 2    3
+    // 4    5      4) ([3] 0 1 2     3 4 2 1 [0]    4
+    //
 
     let mut state = State::new(5);
     println!("{}", state);
@@ -166,6 +171,11 @@ fn main() -> Result<()> {
         state.step(*l);
         println!("{}", state);
     }
+
+    let first = state.current;
+    let next = state.next[&first];
+
+    println!("Part 1: {}", first * next);
 
     Ok(())
 }

@@ -1,0 +1,6 @@
+number = _{ bracketed | literal }
+bracketed = { "[" ~ number ~ "," ~ number ~ "]" }
+literal = { ASCII_DIGIT+ }
+
+
+WHITESPACE = _{ " " }

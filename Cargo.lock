@@ -113,6 +113,7 @@ dependencies = [
  "anyhow",
  "aoc",
  "colored",
+ "lazy_static",
  "pest",
  "pest_derive",
  "thiserror",

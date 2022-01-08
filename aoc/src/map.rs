@@ -1,12 +1,15 @@
 use std::collections::HashMap;
 
-use snafu::{ResultExt, Snafu};
 use std::io::{BufRead, BufReader};
+use thiserror::Error;
 
-#[derive(Debug, Snafu)]
+#[derive(Debug, Error)]
 pub enum MapError {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
+    #[error("I/O error: {}", source)]
+    Io {
+        #[from]
+        source: std::io::Error,
+    },
 }
 
 type MapResult<T> = std::result::Result<T, MapError>;
@@ -225,7 +228,7 @@ where
 
         let buf_reader = BufReader::new(reader);
         for (i, line) in buf_reader.lines().enumerate() {
-            for (j, c) in line.context(Io)?.chars().enumerate() {
+            for (j, c) in line?.chars().enumerate() {
                 if let Some(t) = T::from_char(c) {
                     if let (Some(i), Some(j)) = (I::from_usize(i), I::from_usize(j)) {
                         data.insert([i, j], t);

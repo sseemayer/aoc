@@ -75,6 +75,7 @@ dependencies = [
  "aoc",
  "colored",
  "lazy_static",
+ "num 0.3.1",
  "regex",
  "snafu",
 ]

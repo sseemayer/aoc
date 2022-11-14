@@ -10,4 +10,5 @@ anyhow = "1"
 aoc = { path = "../aoc/" }
 colored = "2"
 lazy_static = "1"
+regex = "1"
 thiserror = "1"

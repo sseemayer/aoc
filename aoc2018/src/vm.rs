@@ -1,4 +1,9 @@
-use std::{collections::HashMap, fmt::Debug};
+use std::{
+    collections::HashMap,
+    fmt::Debug,
+    fs::File,
+    io::{BufRead, BufReader},
+};
 
 use anyhow::{bail, Context, Result};
 use strum::EnumIter;
@@ -276,6 +281,33 @@ pub struct Vm {
 }
 
 impl Vm {
+    pub fn parse(path: &str) -> Result<Vm> {
+        let mut ip = InstructionPointer::Managed(0);
+        let mut instructions = Vec::new();
+        for line in BufReader::new(File::open(path)?).lines() {
+            let line = line?;
+            if line.trim().is_empty() {
+                continue;
+            }
+
+            if line.starts_with("#ip ") {
+                let ip_register: i64 = line
+                    .trim_start_matches("#ip ")
+                    .parse()
+                    .context("Parse IP register")?;
+
+                ip = InstructionPointer::Register(ip_register);
+
+                continue;
+            }
+
+            let instruction: Instruction<Opcode> = line.trim().parse()?;
+            instructions.push(instruction);
+        }
+
+        Ok(Vm::new(instructions, ip))
+    }
+
     pub fn new(instructions: Vec<Instruction<Opcode>>, ip: InstructionPointer) -> Self {
         Self {
             state: State::default(),
@@ -326,6 +358,15 @@ impl Vm {
 
     pub fn run_to_end(&mut self) {
         while self.step() {
+            // keep going
+        }
+    }
+
+    pub fn run_with_interrupt<F>(&mut self, mut interrupt: F)
+    where
+        F: FnMut(&mut Self) -> bool,
+    {
+        while interrupt(self) && self.step() {
             // keep going
         }
     }

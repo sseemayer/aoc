@@ -1,0 +1,64 @@
+		#ip 1
+	0	seti 123 0 4				r4 = 123
+	1	bani 4 456 4				r4 = r4 & 456
+	2	eqri 4 72 4					r4 = (r4 == 72)
+	3	addr 4 1 1					if r4 { jmp a }
+	4	seti 0 0 1					jmp 0
+
+a:	5	seti 0 4 4					r4 = 0
+j:	6	bori 4 65536 3				r3 = r4 | 65536
+	7	seti 12670166 8 4			r4 = 12670166
+i:	8	bani 3 255 2				r2 = r3 & 255
+
+	9	addr 4 2 4					r4 += r2
+	10	bani 4 16777215 4			r4 &= 16777215
+	11	muli 4 65899 4				r4 *= 65899
+	12	bani 4 16777215 4			r4 &= 16777215
+	13	gtir 256 3 2				r2 = 256 > r3
+	14	addr 2 1 1					if r2 { jmp b }
+	15	addi 1 1 1					jmp d
+
+b:	16	seti 27 6 1					jmp c
+
+d:	17	seti 0 0 2					r2 = 0
+h:	18	addi 2 1 5					r5 = r2 + 1
+	19	muli 5 256 5				r5 *= 256
+	20	gtrr 5 3 5					r5 = r5 > r3
+	21	addr 5 1 1					if r5 { jmp e }
+	22	addi 1 1 1					jmp f
+
+e:	23	seti 25 6 1					jmp g
+
+f:	24	addi 2 1 2					r2 += 1
+	25	seti 17 8 1					jmp h
+
+g:	26	setr 2 5 3					r3 = r2
+	27	seti 7 2 1					jmp i
+
+c:	28	eqrr 4 0 2					r2 = r4 == r0
+	29	addr 2 1 1					if r2 { HALT }
+	30	seti 5 8 1					jmp j
+
+
+r3 = 0x10000
+r4 = 12670166
+
+loop {
+
+	r2 = r3 & 0xFF
+	r4 += r2
+	r4 = ((r4 & 0xFFFFFF) * 65899) & 0xFFFFFF
+
+	if r3 < 256 {
+		if r0 == r4 {
+			break
+		} 
+
+		r3 = r4 | 0x10000
+		r4 = 12670166
+		continue
+	}
+
+	r3 /= 256
+}
+

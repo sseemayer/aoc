@@ -9,6 +9,7 @@ edition = "2021"
 anyhow = "1"
 aoc = { path = "../aoc/" }
 colored = "2"
+itertools = "0.10.5"
 lazy_static = "1"
 regex = "1"
 thiserror = "1"

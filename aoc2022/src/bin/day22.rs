@@ -496,7 +496,7 @@ fn main() -> Result<()> {
         let mut state = State::parse("data/day22/input", Some(wrap_input))?;
         state.walk();
 
-        // println!("{}", state);
+        println!("{}", state);
         println!("Part 2: {}", state.password());
     }
 

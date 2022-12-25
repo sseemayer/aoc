@@ -37,6 +37,7 @@ name = "aoc"
 version = "0.1.0"
 dependencies = [
  "num 0.3.1",
+ "strum",
  "thiserror",
 ]
 
@@ -145,6 +146,7 @@ dependencies = [
  "lazy_static",
  "num 0.4.0",
  "regex",
+ "strum",
  "thiserror",
 ]
 

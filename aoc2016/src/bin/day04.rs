@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
+use anyhow::{anyhow, Context, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
 
 lazy_static! {
     static ref RE_ROOM: Regex = Regex::new(r"^([a-z-]+)-([0-9]+)\[([a-z]+)\]$").unwrap();
@@ -18,18 +16,14 @@ struct Room {
 }
 
 impl std::str::FromStr for Room {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let captures = RE_ROOM.captures(s).ok_or(Error::ParseRoom {
-            data: s.to_string(),
-        })?;
+        let captures = RE_ROOM.captures(s).ok_or(anyhow!("Bad room: '{}'", s))?;
 
         let name = captures.get(1).unwrap().as_str().to_string();
         let id = captures.get(2).unwrap().as_str();
-        let id: usize = id.parse().context(ParseInt {
-            data: id.to_string(),
-        })?;
+        let id: usize = id.parse().context("Parse room ID")?;
         let checksum = captures.get(3).unwrap().as_str().to_string();
 
         Ok(Room { name, id, checksum })
@@ -83,24 +77,8 @@ impl Room {
     }
 }
 
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Room format error for '{}'", data))]
-    ParseRoom { data: String },
-}
-
 fn main() -> Result<()> {
-    let rooms: Vec<Room> = std::fs::read_to_string("data/day04/input")
-        .context(Io)?
+    let rooms: Vec<Room> = std::fs::read_to_string("data/day04/input")?
         .lines()
         .map(|l| l.parse())
         .collect::<Result<_>>()?;

@@ -1,35 +1,12 @@
-use std::{
-    cmp::Reverse,
-    collections::{BinaryHeap, HashMap, VecDeque},
-};
-
-use snafu::{ResultExt, Snafu};
-
+use anyhow::{anyhow, Context, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use aoc2016::map::Map;
+use aoc::map::Map;
 
 lazy_static! {
     static ref RE_NODE: Regex =
         Regex::new(r"^/dev/grid/node-x(\d+)-y(\d+)\s+(\d+)T\s+(\d+)T\s+(\d+)T\s+(\d+)%$").unwrap();
-}
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Invalid node: '{}'", data))]
-    ParseNode { data: String },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -44,12 +21,12 @@ struct Node {
 }
 
 impl std::str::FromStr for Node {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let captures = RE_NODE.captures(s.trim()).ok_or(Error::ParseNode {
-            data: s.to_string(),
-        })?;
+        let captures = RE_NODE
+            .captures(s.trim())
+            .ok_or(anyhow!("Bad node: '{}'", s))?;
 
         let x = captures.get(1).unwrap().as_str();
         let y = captures.get(2).unwrap().as_str();
@@ -58,24 +35,12 @@ impl std::str::FromStr for Node {
         let avail = captures.get(5).unwrap().as_str();
         let use_pct = captures.get(6).unwrap().as_str();
 
-        let x: i8 = x.parse().context(ParseInt {
-            data: x.to_string(),
-        })?;
-        let y: i8 = y.parse().context(ParseInt {
-            data: y.to_string(),
-        })?;
-        let size: u16 = size.parse().context(ParseInt {
-            data: size.to_string(),
-        })?;
-        let used: u16 = used.parse().context(ParseInt {
-            data: used.to_string(),
-        })?;
-        let avail: u16 = avail.parse().context(ParseInt {
-            data: avail.to_string(),
-        })?;
-        let use_pct: u16 = use_pct.parse().context(ParseInt {
-            data: use_pct.to_string(),
-        })?;
+        let x: i8 = x.parse().context("Parse x")?;
+        let y: i8 = y.parse().context("Parse y")?;
+        let size: u16 = size.parse().context("Parse size")?;
+        let used: u16 = used.parse().context("Parse used")?;
+        let avail: u16 = avail.parse().context("Parse avail")?;
+        let use_pct: u16 = use_pct.parse().context("Parse use_pct")?;
 
         Ok(Node {
             x,
@@ -170,8 +135,7 @@ impl State {
 }
 
 fn main() -> Result<()> {
-    let nodes: Vec<Node> = std::fs::read_to_string("data/day22/input")
-        .context(Io)?
+    let nodes: Vec<Node> = std::fs::read_to_string("data/day22/input")?
         .lines()
         .filter_map(|l| l.parse().ok())
         .collect();

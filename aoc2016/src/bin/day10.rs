@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
+use anyhow::{anyhow, Context, Result};
 
 #[derive(Debug, Default)]
 struct Bot {
@@ -74,15 +72,11 @@ enum Destination {
 
 impl Destination {
     fn from_type_and_id(dest_type: &str, id: &str) -> Result<Self> {
-        let id: usize = id.parse().context(ParseInt {
-            data: id.to_string(),
-        })?;
+        let id: usize = id.parse().context("Parse ID")?;
         match dest_type {
             "bot" => Ok(Destination::Bot { id }),
             "output" => Ok(Destination::Output { id }),
-            _ => Err(Error::ParseDestination {
-                data: dest_type.to_string(),
-            }),
+            _ => Err(anyhow!("Bad destination type: '{}'", dest_type)),
         }
     }
 }
@@ -150,24 +144,20 @@ enum Instruction {
 }
 
 impl std::str::FromStr for Instruction {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         let tokens: Vec<&str> = s.split_whitespace().collect();
 
         match &tokens[..] {
             &["value", data, "goes", "to", dest_type, id] => {
-                let data: usize = data.parse().context(ParseInt {
-                    data: data.to_string(),
-                })?;
+                let data: usize = data.parse().context("Parse value data")?;
                 let destination = Destination::from_type_and_id(dest_type, id)?;
                 Ok(Instruction::Value { data, destination })
             }
             &["bot", bot_id, "gives", "low", "to", low_type, low_id, "and", "high", "to", high_type, high_id] =>
             {
-                let bot_id: usize = bot_id.parse().context(ParseInt {
-                    data: bot_id.to_string(),
-                })?;
+                let bot_id: usize = bot_id.parse().context("Parse bot ID")?;
                 let destination_low = Destination::from_type_and_id(low_type, low_id)?;
                 let destination_high = Destination::from_type_and_id(high_type, high_id)?;
 
@@ -177,37 +167,13 @@ impl std::str::FromStr for Instruction {
                     destination_high,
                 })
             }
-            _ => Err(Error::ParseInstruction {
-                data: s.to_string(),
-            }),
+            _ => Err(anyhow!("Bad instruction: '{}'", s)),
         }
     }
 }
 
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Invalid instruction: '{}'", data))]
-    ParseInstruction { data: String },
-
-    #[snafu(display("Invalid destination: '{}'", data))]
-    ParseDestination { data: String },
-}
-
 fn main() -> Result<()> {
-    let instructions: Vec<Instruction> = std::fs::read_to_string("data/day10/input")
-        .context(Io)?
-        .lines()
-        .map(|l| l.parse())
-        .collect::<Result<_>>()?;
+    let instructions: Vec<Instruction> = aoc::io::read_lines("data/day10/input")?;
 
     let mut state: State = Default::default();
 

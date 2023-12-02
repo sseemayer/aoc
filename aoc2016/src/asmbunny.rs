@@ -1,18 +1,4 @@
-use snafu::{ResultExt, Snafu};
-use std::collections::HashMap;
-type Result<T> = std::result::Result<T, AsmError>;
-
-#[derive(Debug, Snafu)]
-pub enum AsmError {
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Invalid instruction '{}'", data))]
-    ParseInstruction { data: String },
-}
+use anyhow::{anyhow, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Source {
@@ -21,7 +7,7 @@ pub enum Source {
 }
 
 impl std::str::FromStr for Source {
-    type Err = AsmError;
+    type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self> {
         Ok(if let Ok(value) = s.parse::<i64>() {
             Source::Constant { value }
@@ -50,7 +36,7 @@ pub enum Instruction {
 }
 
 impl std::str::FromStr for Instruction {
-    type Err = AsmError;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         let tokens: Vec<&str> = s.split_whitespace().collect();
@@ -81,11 +67,7 @@ impl std::str::FromStr for Instruction {
                 let source = source.parse()?;
                 Instruction::Out { source }
             }
-            _ => {
-                return Err(AsmError::ParseInstruction {
-                    data: s.to_string(),
-                })
-            }
+            _ => return Err(anyhow!("Bad instruction: '{}'", s)),
         })
     }
 }

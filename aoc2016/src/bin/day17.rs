@@ -1,20 +1,6 @@
 use std::collections::VecDeque;
 
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
+use anyhow::Result;
 
 fn get_open_doors(sequence: &str) -> (bool, bool, bool, bool) {
     let digest = *md5::compute(sequence);
@@ -57,7 +43,7 @@ fn main() -> Result<()> {
     let mut shortest_solution = None;
     let mut longest_solution = 0;
 
-    'outer: while let Some((i, j, sequence)) = queue.pop_front() {
+    while let Some((i, j, sequence)) = queue.pop_front() {
         if i == 3 && j == 3 {
             if shortest_solution == None {
                 shortest_solution = Some(sequence.clone());

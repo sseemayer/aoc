@@ -1,27 +1,6 @@
-use std::{
-    collections::HashSet,
-    fs::File,
-    io::{BufRead, BufReader},
-};
+use std::collections::HashSet;
 
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Invalid turn direction: {}", direction))]
-    ParseDirection { direction: String },
-
-    #[snafu(display("Invalid number: {}", source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
+use anyhow::{anyhow, Context, Result};
 
 #[derive(Debug)]
 enum Direction {
@@ -66,15 +45,13 @@ enum TurnDirection {
 }
 
 impl std::str::FromStr for TurnDirection {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         match s {
             "L" => Ok(TurnDirection::Left),
             "R" => Ok(TurnDirection::Right),
-            _ => Err(Error::ParseDirection {
-                direction: s.to_string(),
-            }),
+            _ => Err(anyhow!("Bad direction: '{}'", s)),
         }
     }
 }
@@ -86,20 +63,17 @@ struct Instruction {
 }
 
 impl std::str::FromStr for Instruction {
-    type Err = Error;
+    type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self> {
         let turn: TurnDirection = s[..1].parse()?;
-        let walk: i64 = s[1..].parse().context(ParseInt {
-            data: s[1..].to_string(),
-        })?;
+        let walk: i64 = s[1..].parse().context("Parse walk distance")?;
 
         Ok(Instruction { turn, walk })
     }
 }
 
 fn main() -> Result<()> {
-    let instructions: Vec<Instruction> = std::fs::read_to_string("data/day01/input")
-        .context(Io)?
+    let instructions: Vec<Instruction> = std::fs::read_to_string("data/day01/input")?
         .trim()
         .split(", ")
         .map(|l| l.parse())

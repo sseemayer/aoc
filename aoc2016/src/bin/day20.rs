@@ -1,21 +1,4 @@
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("IP range parsing error for '{}'", data))]
-    ParseIPRange { data: String },
-}
+use anyhow::{anyhow, Context, Result};
 
 #[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq)]
 struct IPRange {
@@ -24,32 +7,22 @@ struct IPRange {
 }
 
 impl std::str::FromStr for IPRange {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         let tokens: Vec<&str> = s.split("-").collect();
         if tokens.len() != 2 {
-            return Err(Error::ParseIPRange {
-                data: s.to_string(),
-            });
+            return Err(anyhow!("Bad IP range: {}", s));
         }
-        let start: usize = tokens[0].parse().context(ParseInt {
-            data: tokens[0].to_string(),
-        })?;
-        let end: usize = tokens[1].parse().context(ParseInt {
-            data: tokens[1].to_string(),
-        })?;
+        let start: usize = tokens[0].parse().context("Parse range start")?;
+        let end: usize = tokens[1].parse().context("Parse range end")?;
 
         Ok(IPRange { start, end })
     }
 }
 
 fn main() -> Result<()> {
-    let mut ranges: Vec<IPRange> = std::fs::read_to_string("data/day20/input")
-        .context(Io)?
-        .lines()
-        .map(|l| l.parse())
-        .collect::<Result<_>>()?;
+    let mut ranges: Vec<IPRange> = aoc::io::read_lines("data/day20/input")?;
 
     let max_value = 4294967295;
 

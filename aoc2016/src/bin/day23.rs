@@ -1,29 +1,8 @@
-use snafu::{ResultExt, Snafu};
-
-use aoc2016::asmbunny::{AsmError, Instruction, State, StepResult};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Asmbunny error: {}", source))]
-    Asm { source: AsmError },
-}
+use anyhow::Result;
+use aoc2016::asmbunny::{Instruction, State, StepResult};
 
 fn main() -> Result<()> {
-    let instructions: Vec<Instruction> = std::fs::read_to_string("data/day23/input")
-        .context(Io)?
-        .lines()
-        .map(|l| l.parse().context(Asm))
-        .collect::<Result<_>>()?;
-
-    // let instructions: Vec<Instruction> = "cpy 2 a\ntgl a\ntgl a\ntgl a\ncpy 1 a\ndec a\ndec a"
-    //     .lines()
-    //     .map(|l| l.parse().context(Asm))
-    //     .collect::<Result<_>>()?;
+    let instructions: Vec<Instruction> = aoc::io::read_lines("data/day23/input")?;
 
     let mut state = State::from_instructions(instructions.clone());
     state.registers[0] = 7;

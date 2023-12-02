@@ -1,21 +1,4 @@
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Invalid IP7 '{}'", data))]
-    ParseAddress { data: String },
-}
+use anyhow::Result;
 
 #[derive(Debug)]
 struct Address {
@@ -24,7 +7,7 @@ struct Address {
 }
 
 impl std::str::FromStr for Address {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         let mut supernet = String::new();
@@ -121,12 +104,7 @@ impl Address {
 }
 
 fn main() -> Result<()> {
-    let addresses: Vec<Address> = std::fs::read_to_string("data/day07/input")
-        .context(Io)?
-        .trim()
-        .lines()
-        .map(|l| l.parse())
-        .collect::<Result<_>>()?;
+    let addresses: Vec<Address> = aoc::io::read_lines("data/day07/input")?;
 
     println!(
         "Part 1: {} support TLS",

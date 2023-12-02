@@ -1,21 +1,4 @@
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Illegal instruction: '{}'", data))]
-    ParseInstruction { data: String },
-}
+use anyhow::{anyhow, Context, Result};
 
 #[derive(Debug, Clone)]
 enum Instruction {
@@ -42,18 +25,14 @@ enum Instruction {
 }
 
 impl std::str::FromStr for Instruction {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         let tokens: Vec<&str> = s.split_whitespace().collect();
         Ok(match &tokens[..] {
             &["swap", "position", x, "with", "position", y] => {
-                let x = x.parse().context(ParseInt {
-                    data: x.to_string(),
-                })?;
-                let y = y.parse().context(ParseInt {
-                    data: y.to_string(),
-                })?;
+                let x = x.parse().context("Parse swap first pos")?;
+                let y = y.parse().context("Parse swap second pos")?;
                 Instruction::SwapPosition { x, y }
             }
             &["swap", "letter", x, "with", "letter", y] => {
@@ -62,15 +41,11 @@ impl std::str::FromStr for Instruction {
                 Instruction::SwapLetter { x, y }
             }
             &["rotate", "left", steps, _] => {
-                let steps = steps.parse().context(ParseInt {
-                    data: steps.to_string(),
-                })?;
+                let steps = steps.parse().context("Parse rotate left steps")?;
                 Instruction::RotateLeft { steps }
             }
             &["rotate", "right", steps, _] => {
-                let steps = steps.parse().context(ParseInt {
-                    data: steps.to_string(),
-                })?;
+                let steps = steps.parse().context("Parse rotate right steps")?;
                 Instruction::RotateRight { steps }
             }
             &["rotate", "based", "on", "position", "of", "letter", x] => {
@@ -78,28 +53,16 @@ impl std::str::FromStr for Instruction {
                 Instruction::RotateBasedOnLetterPosition { x }
             }
             &["reverse", "positions", x, "through", y] => {
-                let x = x.parse().context(ParseInt {
-                    data: x.to_string(),
-                })?;
-                let y = y.parse().context(ParseInt {
-                    data: y.to_string(),
-                })?;
+                let x = x.parse().context("Parse reverse first pos")?;
+                let y = y.parse().context("Parse reverse second pos")?;
                 Instruction::Reverse { x, y }
             }
             &["move", "position", x, "to", "position", y] => {
-                let x = x.parse().context(ParseInt {
-                    data: x.to_string(),
-                })?;
-                let y = y.parse().context(ParseInt {
-                    data: y.to_string(),
-                })?;
+                let x = x.parse().context("Parse move first pos")?;
+                let y = y.parse().context("Parse move second pos")?;
                 Instruction::Move { x, y }
             }
-            _ => {
-                return Err(Error::ParseInstruction {
-                    data: s.to_string(),
-                })
-            }
+            _ => return Err(anyhow!("Bad instruction: '{}'", s)),
         })
     }
 }
@@ -175,8 +138,7 @@ impl Instruction {
                 let i = data
                     .iter()
                     .enumerate()
-                    .filter_map(|(i, a)| if a == x { Some(i) } else { None })
-                    .next()
+                    .find_map(|(i, a)| if a == x { Some(i) } else { None })
                     .unwrap();
 
                 let n_rotations = 1 + i + if i >= 4 { 1 } else { 0 };
@@ -186,7 +148,7 @@ impl Instruction {
                 }
             }
             Instruction::Reverse { x, y } => {
-                &mut data[*x..*y + 1].reverse();
+                data[*x..*y + 1].reverse();
             }
             Instruction::Move { x, y } => {
                 let v = data.remove(*x);
@@ -203,8 +165,7 @@ fn chars(s: &str) -> Vec<char> {
 }
 
 fn main() -> Result<()> {
-    let mut instructions: Vec<Instruction> = std::fs::read_to_string("data/day21/input")
-        .context(Io)?
+    let mut instructions: Vec<Instruction> = std::fs::read_to_string("data/day21/input")?
         .lines()
         .map(|l| l.parse())
         .collect::<Result<_>>()?;

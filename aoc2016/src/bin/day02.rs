@@ -1,6 +1,5 @@
-use snafu::{ResultExt, Snafu};
-
-use aoc2016::map::{Map, MapError, ParseMapTile};
+use anyhow::{anyhow, Context, Result};
+use aoc::map::{Map, ParseMapTile};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Tile {
@@ -23,20 +22,6 @@ impl ParseMapTile for Tile {
     }
 }
 
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Map parsing error: {}", source))]
-    ParseMap { source: MapError },
-
-    #[snafu(display("Invalid direction"))]
-    ParseDirection,
-}
-
 #[derive(Debug, Clone)]
 enum Direction {
     Up,
@@ -46,7 +31,7 @@ enum Direction {
 }
 
 impl std::str::FromStr for Direction {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         match s {
@@ -54,7 +39,7 @@ impl std::str::FromStr for Direction {
             "D" => Ok(Direction::Down),
             "L" => Ok(Direction::Left),
             "R" => Ok(Direction::Right),
-            _ => Err(Error::ParseDirection),
+            _ => Err(anyhow!("Bad direction: '{}'", s)),
         }
     }
 }
@@ -97,8 +82,7 @@ fn follow_instructions(
 }
 
 fn main() -> Result<()> {
-    let instructions: Vec<Vec<Direction>> = std::fs::read_to_string("data/day02/input")
-        .context(Io)?
+    let instructions: Vec<Vec<Direction>> = std::fs::read_to_string("data/day02/input")?
         .trim()
         .lines()
         .map(|l| {
@@ -108,14 +92,14 @@ fn main() -> Result<()> {
         })
         .collect::<Result<_>>()?;
 
-    let keypad1: Map<[i64; 2], Tile> = "123\n456\n789".parse().context(ParseMap)?;
+    let keypad1: Map<[i64; 2], Tile> = "123\n456\n789".parse().context("Parse keypad 1 map")?;
     let five_pos1 = keypad1.find_one(&Tile { c: '5' }).expect("Need 5 key");
     let digits1 = follow_instructions(&keypad1, five_pos1, &instructions);
     println!("Part 1: {}", digits1);
 
     let keypad2: Map<[i64; 2], Tile> = "  1  \n 234 \n56789\n ABC \n  D  "
         .parse()
-        .context(ParseMap)?;
+        .context("Parse keypad 2 map")?;
     let five_pos2 = keypad2.find_one(&Tile { c: '5' }).expect("Need 5 key");
     let digits2 = follow_instructions(&keypad2, five_pos2, &instructions);
     println!("Part 2: {}", digits2);

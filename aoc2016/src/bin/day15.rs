@@ -1,5 +1,4 @@
-use snafu::{ResultExt, Snafu};
-
+use anyhow::{anyhow, Context, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
 
@@ -7,23 +6,6 @@ lazy_static! {
     static ref RE_DISC: Regex =
         Regex::new(r"Disc #(\d+) has (\d+) positions; at time=0, it is at position (\d+).")
             .unwrap();
-}
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Invalid Disc definition: '{}'", data))]
-    ParseDisc { data: String },
 }
 
 fn egcd(a: i64, b: i64) -> (i64, i64, i64) {
@@ -65,26 +47,18 @@ struct Disc {
 }
 
 impl std::str::FromStr for Disc {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let cap = RE_DISC.captures(s).ok_or(Error::ParseDisc {
-            data: s.to_string(),
-        })?;
+        let cap = RE_DISC.captures(s).ok_or(anyhow!("Bad disc: '{}'", s))?;
 
         let number = cap.get(1).unwrap().as_str();
         let n_positions = cap.get(2).unwrap().as_str();
         let offset = cap.get(3).unwrap().as_str();
 
-        let number: i64 = number.parse().context(ParseInt {
-            data: number.to_string(),
-        })?;
-        let n_positions: i64 = n_positions.parse().context(ParseInt {
-            data: n_positions.to_string(),
-        })?;
-        let offset: i64 = offset.parse().context(ParseInt {
-            data: offset.to_string(),
-        })?;
+        let number: i64 = number.parse().context("Parse disc number")?;
+        let n_positions: i64 = n_positions.parse().context("Parse disc position")?;
+        let offset: i64 = offset.parse().context("Parse disc offset")?;
 
         Ok(Disc {
             number,
@@ -120,11 +94,7 @@ fn solve(discs: &[Disc]) -> Option<i64> {
 }
 
 fn main() -> Result<()> {
-    let discs1: Vec<Disc> = std::fs::read_to_string("data/day15/input")
-        .context(Io)?
-        .lines()
-        .map(|l| l.parse())
-        .collect::<Result<_>>()?;
+    let discs1: Vec<Disc> = aoc::io::read_lines("data/day15/input")?;
 
     if let Some(t) = solve(&discs1) {
         println!("Part 1: {}", t);

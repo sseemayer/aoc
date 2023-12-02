@@ -1,18 +1,4 @@
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
+use anyhow::Result;
 
 fn generate(start_row: &[bool], rows: usize) -> usize {
     let width = start_row.len();
@@ -53,8 +39,7 @@ fn generate(start_row: &[bool], rows: usize) -> usize {
 }
 
 fn main() -> Result<()> {
-    let first_row: Vec<bool> = std::fs::read_to_string("data/day18/input")
-        .context(Io)?
+    let first_row: Vec<bool> = std::fs::read_to_string("data/day18/input")?
         .trim()
         .chars()
         .map(|c| c == '^')

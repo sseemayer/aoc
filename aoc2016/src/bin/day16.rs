@@ -1,18 +1,4 @@
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
+use anyhow::Result;
 
 fn expand(data: &[u8]) -> Vec<u8> {
     let mut out = Vec::with_capacity(data.len() * 2 + 1);

@@ -1,18 +1,4 @@
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
+use anyhow::Result;
 
 fn is_valid_hash(hash: &[u8]) -> bool {
     hash[0] == 0 && hash[1] == 0 && hash[2] & 0xf0 == 0

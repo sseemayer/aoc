@@ -1,18 +1,4 @@
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
+use anyhow::{Context, Result};
 
 fn get_decompressed_length(s: &str, expand_recursive: bool) -> Result<usize> {
     let mut pos = 0;
@@ -36,8 +22,8 @@ fn get_decompressed_length(s: &str, expand_recursive: bool) -> Result<usize> {
                 let n_read: String = s[pos + 1..x_pos].iter().collect();
                 let n_repeat: String = s[x_pos + 1..closing_pos].iter().collect();
 
-                let n_read: usize = n_read.parse().context(ParseInt { data: n_read })?;
-                let n_repeat: usize = n_repeat.parse().context(ParseInt { data: n_repeat })?;
+                let n_read: usize = n_read.parse().context("Parse n_read")?;
+                let n_repeat: usize = n_repeat.parse().context("Parse n_repeat")?;
 
                 let inner_length = if expand_recursive {
                     let data: String = s[closing_pos + 1..closing_pos + 1 + n_read]
@@ -63,8 +49,7 @@ fn get_decompressed_length(s: &str, expand_recursive: bool) -> Result<usize> {
 }
 
 fn main() -> Result<()> {
-    let input: String = std::fs::read_to_string("data/day09/input")
-        .context(Io)?
+    let input: String = std::fs::read_to_string("data/day09/input")?
         .trim()
         .to_string();
 

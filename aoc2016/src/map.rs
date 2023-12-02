@@ -1,15 +1,6 @@
 use std::collections::HashMap;
 
-use snafu::{ResultExt, Snafu};
 use std::io::{BufRead, BufReader};
-
-#[derive(Debug, Snafu)]
-pub enum MapError {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-}
-
-type MapResult<T> = std::result::Result<T, MapError>;
 
 /// Trait for a generic integer coordinate
 pub trait IntCoord:
@@ -284,7 +275,7 @@ where
     T: ParseMapTile,
     I: IntCoord,
 {
-    type Err = MapError;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Map::read(&mut s.as_bytes())

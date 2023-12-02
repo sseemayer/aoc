@@ -4,26 +4,8 @@ use std::{
     fs::File,
 };
 
-use snafu::{ResultExt, Snafu};
-
-use aoc2016::map::{Map, MapError, ParseMapTile};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Map error: {}", source))]
-    ParseMap { source: MapError },
-}
+use anyhow::Result;
+use aoc::map::{Map, ParseMapTile};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Tile {
@@ -123,13 +105,11 @@ fn shortest_tour(
 }
 
 fn main() -> Result<()> {
-    let map: Map<[i16; 2], Tile> =
-        Map::read(&mut File::open("data/day24/input").context(Io)?).context(ParseMap)?;
+    let map: Map<[i16; 2], Tile> = Map::read(&mut File::open("data/day24/input")?)?;
 
     // let map: Map<[i16; 2], Tile> =
     //     "###########\n#0.1.....2#\n#.#######.#\n#4.......3#\n###########"
-    //         .parse()
-    //         .context(ParseMap)?;
+    //         .parse()?;
 
     let start_pos = map
         .find_one(&Tile::Waypoint { id: 0 })

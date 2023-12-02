@@ -1,9 +1,7 @@
 use std::{collections::HashSet, io::Write};
 
+use anyhow::{anyhow, Result};
 use itertools::Itertools;
-use snafu::Snafu;
-
-type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Hash, PartialEq, Eq, PartialOrd, Ord, Clone)]
 enum Item {
@@ -14,22 +12,18 @@ enum Item {
 }
 
 impl std::str::FromStr for Item {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let s: Vec<char> = s.chars().collect();
-        if s.len() != 2 {
-            return Err(Error::ParseItem {
-                data: s[0].to_string(),
-            });
+        let chars: Vec<char> = s.chars().collect();
+        if chars.len() != 2 {
+            return Err(anyhow!("Bad item: '{}' - wrong token number", s));
         }
 
-        match s[1] {
-            'M' => Ok(Item::Chip(s[0])),
-            'G' => Ok(Item::Generator(s[0])),
-            _ => Err(Error::ParseItem {
-                data: s[1].to_string(),
-            }),
+        match chars[1] {
+            'M' => Ok(Item::Chip(chars[0])),
+            'G' => Ok(Item::Generator(chars[0])),
+            _ => Err(anyhow!("Bad item: '{}' - unknown type", s)),
         }
     }
 }
@@ -192,21 +186,6 @@ impl std::hash::Hash for State {
             .collect();
         floors.hash(state);
     }
-}
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Invalid item: '{}'", data))]
-    ParseItem { data: String },
 }
 
 fn solve(input: &[&str]) -> Result<usize> {

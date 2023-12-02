@@ -1,18 +1,4 @@
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
+use anyhow::{Context, Result};
 
 struct Triangle {
     a: usize,
@@ -27,16 +13,11 @@ impl Triangle {
 }
 
 fn main() -> Result<()> {
-    let matrix: Vec<Vec<usize>> = std::fs::read_to_string("data/day03/input")
-        .context(Io)?
+    let matrix: Vec<Vec<usize>> = std::fs::read_to_string("data/day03/input")?
         .lines()
         .map(|l| {
             l.split_whitespace()
-                .map(|t| {
-                    t.parse::<usize>().context(ParseInt {
-                        data: t.to_string(),
-                    })
-                })
+                .map(|t| t.parse::<usize>().context("Parse input int"))
                 .collect::<Result<_>>()
         })
         .collect::<Result<_>>()?;

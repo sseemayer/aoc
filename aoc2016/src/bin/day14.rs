@@ -1,20 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
+use anyhow::Result;
 
 fn make_hash(n: usize, salt: &str, stretching: usize) -> [u8; 16] {
     let mut hash = *md5::compute(format!("{}{}", salt, n));

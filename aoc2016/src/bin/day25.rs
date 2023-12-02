@@ -1,25 +1,10 @@
 use std::{collections::HashSet, io::Write};
 
-use aoc2016::asmbunny::{AsmError, Instruction, State, StepResult};
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Asmbunny error: {}", source))]
-    Asm { source: AsmError },
-}
+use anyhow::Result;
+use aoc2016::asmbunny::{Instruction, State, StepResult};
 
 fn main() -> Result<()> {
-    let instructions: Vec<Instruction> = std::fs::read_to_string("data/day25/input")
-        .context(Io)?
-        .lines()
-        .map(|l| l.parse().context(Asm))
-        .collect::<Result<_>>()?;
+    let instructions: Vec<Instruction> = aoc::io::read_lines("data/day25/input")?;
 
     let mut a = 1;
     loop {
@@ -35,13 +20,13 @@ fn main() -> Result<()> {
             seen_states.insert(state.clone());
 
             match state.step() {
-                aoc2016::asmbunny::StepResult::OutOfProgram => {
+                StepResult::OutOfProgram => {
                     found = false;
                     println!("\nOut of program!");
                     break;
                 }
-                aoc2016::asmbunny::StepResult::OkNoOutput => {}
-                aoc2016::asmbunny::StepResult::OkOutput { out } => {
+                StepResult::OkNoOutput => {}
+                StepResult::OkOutput { out } => {
                     print!("{}", out);
                     if out != n_outputs % 2 {
                         found = false;

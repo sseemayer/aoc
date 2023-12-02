@@ -1,23 +1,4 @@
-use std::{
-    fs::File,
-    io::{BufRead, BufReader},
-};
-
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Bad line: {}", line))]
-    BadLine { line: String },
-
-    #[snafu(display("Number format: {}", source))]
-    Num { source: std::num::ParseIntError },
-}
+use anyhow::{anyhow, Context, Result};
 
 #[derive(Debug)]
 struct Layer {
@@ -26,15 +7,13 @@ struct Layer {
 }
 
 impl std::str::FromStr for Layer {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        let (depth, range) = s.split_once(": ").ok_or(Error::BadLine {
-            line: s.to_string(),
-        })?;
+        let (depth, range) = s.split_once(": ").ok_or(anyhow!("Bad line: '{}'", s))?;
 
-        let depth = depth.parse().context(Num)?;
-        let range = range.parse().context(Num)?;
+        let depth = depth.parse().context("Parse depth")?;
+        let range = range.parse().context("Parse range")?;
 
         Ok(Layer { depth, range })
     }
@@ -59,10 +38,7 @@ fn caught(layers: &[Layer], delay: usize) -> bool {
 }
 
 fn main() -> Result<()> {
-    let layers = BufReader::new(File::open("data/day13/input").context(Io)?)
-        .lines()
-        .map(|l| l.context(Io)?.parse())
-        .collect::<Result<Vec<Layer>>>()?;
+    let layers: Vec<Layer> = aoc::io::read_lines("data/day13/input")?;
 
     println!("Part 1: {}", calculate_severity(&layers[..], 0));
 

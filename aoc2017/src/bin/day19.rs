@@ -1,25 +1,8 @@
 use std::fs::File;
 
-use aoc::map::{MapError, ParseMapTile};
+use anyhow::Result;
+use aoc::map::ParseMapTile;
 use colored::Colorize;
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Map reading error: {}", source))]
-    ReadMap { source: MapError },
-}
 
 type Map = aoc::map::Map<[i16; 2], Tile>;
 
@@ -126,7 +109,7 @@ fn walk(map: &Map) -> (Vec<char>, usize) {
 }
 
 fn main() -> Result<()> {
-    let map = Map::read(&mut File::open("data/day19/input").context(Io)?).context(ReadMap)?;
+    let map = Map::read(&mut File::open("data/day19/input")?)?;
 
     let (path, steps) = walk(&map);
 

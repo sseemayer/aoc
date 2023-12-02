@@ -4,36 +4,22 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error: {}", source))]
-    ParseInt { source: std::num::ParseIntError },
-
-    #[snafu(display("Bad line: '{}'", line))]
-    BadLine { line: String },
-}
+use anyhow::{anyhow, Context, Result};
 
 fn parse_components(f: &str) -> Result<HashSet<(u8, u8)>> {
     let mut out = HashSet::new();
 
-    let reader = BufReader::new(File::open(f).context(Io)?);
+    let reader = BufReader::new(File::open(f).context("Open file")?);
 
     for line in reader.lines() {
-        let line = line.context(Io)?;
+        let line = line?;
 
         let (a, b) = line
             .split_once("/")
-            .ok_or_else(|| Error::BadLine { line: line.clone() })?;
+            .ok_or_else(|| anyhow!("Bad line: '{}'", line))?;
 
-        let a = a.parse().context(ParseInt)?;
-        let b = b.parse().context(ParseInt)?;
+        let a = a.parse().context("parse first component")?;
+        let b = b.parse().context("parse second component")?;
 
         out.insert((a, b));
     }

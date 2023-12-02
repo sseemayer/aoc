@@ -1,32 +1,6 @@
 use std::collections::HashMap;
 
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Invalid relation '{}'", data))]
-    ParseRelation { data: String },
-
-    #[snafu(display("Invalid condition '{}'", data))]
-    ParseCondition { data: String },
-
-    #[snafu(display("Invalid operation '{}'", data))]
-    ParseOperation { data: String },
-
-    #[snafu(display("Invalid instruction '{}'", data))]
-    ParseInstruction { data: String },
-}
+use anyhow::{anyhow, Context, Result};
 
 #[derive(Debug, Clone)]
 struct Instruction {
@@ -37,21 +11,17 @@ struct Instruction {
 }
 
 impl std::str::FromStr for Instruction {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         let tokens: Vec<&str> = s.split_whitespace().collect();
         if tokens.len() != 7 || tokens[3] != "if" {
-            return Err(Error::ParseInstruction {
-                data: s.to_string(),
-            });
+            return Err(anyhow!("Bad instruction: '{}", s));
         }
 
         let register = tokens[0].to_string();
         let operation: Operation = tokens[1].parse()?;
-        let amount: i64 = tokens[2].parse().context(ParseInt {
-            data: tokens[2].to_string(),
-        })?;
+        let amount: i64 = tokens[2].parse().context("Parse amount")?;
 
         let condition: Condition = tokens[4..].join(" ").parse()?;
 
@@ -71,17 +41,13 @@ enum Operation {
 }
 
 impl std::str::FromStr for Operation {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         Ok(match s {
             "inc" => Operation::Inc,
             "dec" => Operation::Dec,
-            _ => {
-                return Err(Error::ParseOperation {
-                    data: s.to_string(),
-                })
-            }
+            _ => return Err(anyhow!("Bad operation: '{}'", s)),
         })
     }
 }
@@ -94,21 +60,17 @@ struct Condition {
 }
 
 impl std::str::FromStr for Condition {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         let tokens: Vec<&str> = s.split_whitespace().collect();
         if tokens.len() != 3 {
-            return Err(Error::ParseCondition {
-                data: s.to_string(),
-            });
+            return Err(anyhow!("Bad condition: '{}'", s));
         }
 
         let register = tokens[0].to_string();
         let relation: Relation = tokens[1].parse()?;
-        let threshold: i64 = tokens[2].parse().context(ParseInt {
-            data: tokens[2].to_string(),
-        })?;
+        let threshold: i64 = tokens[2].parse().context("Parse threshold")?;
 
         Ok(Condition {
             register,
@@ -129,7 +91,7 @@ enum Relation {
 }
 
 impl std::str::FromStr for Relation {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         Ok(match s {
@@ -139,11 +101,7 @@ impl std::str::FromStr for Relation {
             "<=" => Relation::LessOrEqual,
             "==" => Relation::Equal,
             "!=" => Relation::UnEqual,
-            _ => {
-                return Err(Error::ParseRelation {
-                    data: s.to_string(),
-                })
-            }
+            _ => return Err(anyhow!("Bad relation: '{}'", s)),
         })
     }
 }
@@ -192,11 +150,7 @@ impl Instruction {
 }
 
 fn main() -> Result<()> {
-    let instructions: Vec<Instruction> = std::fs::read_to_string("data/day08/input")
-        .context(Io)?
-        .lines()
-        .map(|l| l.parse())
-        .collect::<Result<_>>()?;
+    let instructions: Vec<Instruction> = aoc::io::read_lines("data/day08/input")?;
 
     let mut state = State::new();
 

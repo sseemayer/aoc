@@ -1,20 +1,6 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
+use anyhow::{Context, Result};
 
 fn step(banks: &mut [u16]) {
     let (pos, n) = banks
@@ -34,15 +20,10 @@ fn step(banks: &mut [u16]) {
 }
 
 fn main() -> Result<()> {
-    let banks: Vec<u16> = std::fs::read_to_string("data/day06/input")
-        .context(Io)?
+    let banks: Vec<u16> = std::fs::read_to_string("data/day06/input")?
         .trim()
         .split_whitespace()
-        .map(|t| {
-            t.parse().context(ParseInt {
-                data: t.to_string(),
-            })
-        })
+        .map(|t| t.parse().context("Parse input int"))
         .collect::<Result<_>>()?;
 
     // let banks = vec![0, 2, 7, 0];

@@ -1,21 +1,4 @@
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Invalid group: '{}': {}", data, reason))]
-    ParseGroup { data: String, reason: &'static str },
-}
+use anyhow::{anyhow, Context, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Content {
@@ -72,7 +55,7 @@ impl Content {
 struct Group(Vec<Content>);
 
 impl std::str::FromStr for Group {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         let chars: Vec<char> = s.chars().collect();
@@ -80,17 +63,11 @@ impl std::str::FromStr for Group {
         // println!("Parsing '{}'", s);
 
         if chars[0] != '{' {
-            return Err(Error::ParseGroup {
-                data: s.to_string(),
-                reason: "Group must start with '{'",
-            });
+            return Err(anyhow!("Group must start with '{{': '{}'", s));
         }
 
         if chars[chars.len() - 1] != '}' {
-            return Err(Error::ParseGroup {
-                data: s.to_string(),
-                reason: "Group must end with '}'",
-            });
+            return Err(anyhow!("Group must end with '}}': '{}'", s));
         }
 
         let mut pos = 1;
@@ -110,10 +87,10 @@ impl std::str::FromStr for Group {
                 (false, _, '}') => {
                     // group close
                     if open_group_pos.is_empty() {
-                        return Err(Error::ParseGroup {
-                            data: s.to_string(),
-                            reason: "Encountered '}' without matching group opening",
-                        });
+                        return Err(anyhow!(
+                            "Encountered '}}' without matching group opening: '{}'",
+                            s
+                        ));
                     }
 
                     let go = open_group_pos.pop().unwrap();
@@ -194,7 +171,7 @@ impl Group {
 
 fn main() -> Result<()> {
     let group: Group = std::fs::read_to_string("data/day09/input")
-        .context(Io)?
+        .context("Reading input file")?
         .trim()
         .parse()?;
 

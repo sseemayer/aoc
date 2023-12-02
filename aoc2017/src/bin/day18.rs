@@ -1,30 +1,7 @@
 use std::collections::HashMap;
 
-use aoc::io::{read_lines, ReadLinesError};
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Error reading commands: '{}'", source))]
-    ReadLines { source: ReadLinesError<Command> },
-}
-
-#[derive(Debug, Snafu)]
-enum ParseCommandError {
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Bad command: '{}", data))]
-    BadCommand { data: String },
-}
+use anyhow::{anyhow, Result};
+use aoc::io::read_lines;
 
 #[derive(Debug, Clone)]
 enum Value {
@@ -33,7 +10,7 @@ enum Value {
 }
 
 impl std::str::FromStr for Value {
-    type Err = ParseCommandError;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         if let Ok(v) = s.parse::<i64>() {
@@ -56,7 +33,7 @@ enum Command {
 }
 
 impl std::str::FromStr for Command {
-    type Err = ParseCommandError;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let tokens: Vec<&str> = s.trim().split_whitespace().collect();
@@ -95,9 +72,7 @@ impl std::str::FromStr for Command {
                 let y: Value = tokens[2].parse()?;
                 Ok(Command::Jgz { x, y })
             }
-            _ => Err(ParseCommandError::BadCommand {
-                data: s.to_string(),
-            }),
+            _ => Err(anyhow!("Bad command: '{}'", s)),
         }
     }
 }
@@ -223,7 +198,7 @@ impl State {
 }
 
 fn main() -> Result<()> {
-    let program: Vec<Command> = read_lines("data/day18/input").context(ReadLines)?;
+    let program: Vec<Command> = read_lines("data/day18/input")?;
 
     let mut state = State::from_program(&program[..], None, true);
     state.run_single();

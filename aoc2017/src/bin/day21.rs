@@ -4,26 +4,9 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use aoc::map::{MapError, ParseMapTile};
+use anyhow::{anyhow, Context, Result};
+use aoc::map::ParseMapTile;
 use colored::Colorize;
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Map reading error: {}", source))]
-    ReadMap { source: MapError },
-
-    #[snafu(display("Bad rule: '{}' - {}", line, reason))]
-    BadRule { line: String, reason: &'static str },
-
-    #[snafu(display("No rule for code {:b} and size {}", cell_hash, cell_size))]
-    NoRule { cell_hash: usize, cell_size: usize },
-}
 
 type Map = aoc::map::Map<[i16; 2], Tile>;
 
@@ -116,15 +99,13 @@ impl RuleBase {
         let cell_hash = canonical_hash_from(&cell);
 
         let out = if cell.get_extent().1[0] == 1 {
-            self.rules2.get(&cell_hash).ok_or(Error::NoRule {
-                cell_hash,
-                cell_size: 2,
-            })?
+            self.rules2
+                .get(&cell_hash)
+                .ok_or(anyhow!("No 2-cell rule for hash '{}'", cell_hash))?
         } else {
-            self.rules3.get(&cell_hash).ok_or(Error::NoRule {
-                cell_hash,
-                cell_size: 3,
-            })?
+            self.rules3
+                .get(&cell_hash)
+                .ok_or(anyhow!("No 3-cell rule for hash '{}'", cell_hash))?
         };
 
         Ok(out)
@@ -171,20 +152,19 @@ fn canonical_hash_from(from: &Map) -> usize {
 }
 
 fn parse_map_line(map: &str) -> Result<Map> {
-    map.replace('/', "\n").parse().context(ReadMap)
+    map.replace('/', "\n").parse().context("Reading map")
 }
 
 fn load_input(path: &str) -> Result<RuleBase> {
-    let reader = BufReader::new(File::open(path).context(Io)?);
+    let reader = BufReader::new(File::open(path).context("Loading input")?);
     let mut rules2 = HashMap::new();
     let mut rules3 = HashMap::new();
 
     for line in reader.lines() {
-        let line = line.context(Io)?;
-        let (from, to) = line.split_once(" => ").ok_or_else(|| Error::BadRule {
-            line: line.clone(),
-            reason: "cannot split",
-        })?;
+        let line = line?;
+        let (from, to) = line
+            .split_once(" => ")
+            .ok_or_else(|| anyhow!("Cannot split line: '{}", line))?;
 
         let from = parse_map_line(from)?;
         let to = parse_map_line(to)?;
@@ -196,10 +176,7 @@ fn load_input(path: &str) -> Result<RuleBase> {
         } else if max[0] == 2 {
             rules3.insert(from_hash, to);
         } else {
-            return Err(Error::BadRule {
-                line,
-                reason: "incorrect dimensionality",
-            });
+            return Err(anyhow!("Incorrect dimensionality: '{}'", line));
         }
     }
 

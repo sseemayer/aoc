@@ -1,20 +1,5 @@
-use snafu::{ResultExt, Snafu};
-
+use anyhow::Result;
 use aoc::map::Map;
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
 
 //
 // 37  36  35  34  33  32  31

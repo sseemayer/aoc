@@ -1,19 +1,8 @@
 use std::fs::File;
 
-use aoc::map::{MapError, ParseMapTile};
+use anyhow::Result;
+use aoc::map::ParseMapTile;
 use colored::{ColoredString, Colorize};
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Map reading error: {}", source))]
-    ReadMap { source: MapError },
-}
 
 type Map<S> = aoc::map::Map<[i16; 2], Tile<S>>;
 
@@ -274,7 +263,7 @@ where
 
 fn main() -> Result<()> {
     let mut state1: State<TileState1> =
-        State::new(Map::read(&mut File::open("data/day22/input").context(Io)?).context(ReadMap)?);
+        State::new(Map::read(&mut File::open("data/day22/input")?)?);
 
     for _ in 0..10_000 {
         state1.step();
@@ -283,7 +272,7 @@ fn main() -> Result<()> {
     println!("part 1: {}", state1);
 
     let mut state2: State<TileState2> =
-        State::new(Map::read(&mut File::open("data/day22/input").context(Io)?).context(ReadMap)?);
+        State::new(Map::read(&mut File::open("data/day22/input")?)?);
 
     for _ in 0..10_000_000 {
         state2.step();

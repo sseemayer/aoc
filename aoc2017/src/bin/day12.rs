@@ -1,24 +1,6 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fs::File,
-    io::{BufRead, BufReader},
-};
+use std::collections::{HashMap, HashSet};
 
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Bad line: {}", line))]
-    BadLine { line: String },
-
-    #[snafu(display("Number format: {}", source))]
-    Num { source: std::num::ParseIntError },
-}
+use anyhow::{anyhow, Context, Result};
 
 #[derive(Debug)]
 struct Connection {
@@ -27,17 +9,15 @@ struct Connection {
 }
 
 impl std::str::FromStr for Connection {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        let (left, right) = s.split_once(" <-> ").ok_or(Error::BadLine {
-            line: s.to_string(),
-        })?;
+        let (left, right) = s.split_once(" <-> ").ok_or(anyhow!("Bad line: '{}'", s))?;
 
-        let left: usize = left.parse().context(Num)?;
+        let left: usize = left.parse().context("Parse LHS")?;
         let right: Vec<usize> = right
             .split(", ")
-            .map(|v| Ok(v.parse().context(Num)?))
+            .map(|v| Ok(v.parse().context("Parse RHS")?))
             .collect::<Result<Vec<usize>>>()?;
 
         Ok(Connection { left, right })
@@ -103,10 +83,7 @@ impl Graph {
 }
 
 fn main() -> Result<()> {
-    let connections = BufReader::new(File::open("data/day12/input").context(Io)?)
-        .lines()
-        .map(|l| l.context(Io)?.parse())
-        .collect::<Result<Vec<Connection>>>()?;
+    let connections: Vec<Connection> = aoc::io::read_lines("data/day12/input")?;
 
     let graph = Graph::from_connections(&connections[..]);
 

@@ -1,30 +1,11 @@
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
+use anyhow::{Context, Result};
 
 fn main() -> Result<()> {
-    let data: Vec<Vec<i64>> = std::fs::read_to_string("data/day02/input")
-        .context(Io)?
+    let data: Vec<Vec<i64>> = std::fs::read_to_string("data/day02/input")?
         .lines()
         .map(|l| {
             l.split_whitespace()
-                .map(|c| {
-                    c.parse().context(ParseInt {
-                        data: c.to_string(),
-                    })
-                })
+                .map(|c| c.parse().context("Parse input int"))
                 .collect::<Result<_>>()
         })
         .collect::<Result<_>>()?;

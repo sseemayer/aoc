@@ -1,20 +1,6 @@
 use std::collections::HashSet;
 
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
+use anyhow::Result;
 
 fn has_no_duplicates(words: &[String]) -> bool {
     let set: HashSet<&String> = words.iter().collect();
@@ -35,8 +21,7 @@ fn has_no_anagram(words: &[String]) -> bool {
 }
 
 fn main() -> Result<()> {
-    let mut passphrases: Vec<Vec<String>> = std::fs::read_to_string("data/day04/input")
-        .context(Io)?
+    let passphrases: Vec<Vec<String>> = std::fs::read_to_string("data/day04/input")?
         .lines()
         .map(|l| l.split_whitespace().map(|s| s.to_string()).collect())
         .collect();

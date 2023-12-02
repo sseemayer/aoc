@@ -1,30 +1,13 @@
 use aoc2017::knothash::KnotHash;
-use snafu::{ResultExt, Snafu};
 
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
+use anyhow::{anyhow, Result};
 
 fn main() -> Result<()> {
-    let input = std::fs::read_to_string("data/day10/input").context(Io)?;
+    let input = std::fs::read_to_string("data/day10/input")?;
 
     let lengths: Vec<usize> = input
         .split(",")
-        .map(|n| {
-            n.trim().parse().context(ParseInt {
-                data: n.to_string(),
-            })
-        })
+        .map(|n| n.trim().parse().map_err(|e| anyhow!("Bad int: {}", e)))
         .collect::<Result<_>>()?;
 
     // let lengths = vec![3, 4, 1, 5];

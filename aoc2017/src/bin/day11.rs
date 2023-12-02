@@ -1,14 +1,4 @@
-use snafu::{ResultExt, Snafu};
-
-use colored::Colorize;
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-}
+use anyhow::{anyhow, Result};
 
 #[derive(Debug)]
 enum Direction {
@@ -34,7 +24,7 @@ impl Direction {
 }
 
 impl std::str::FromStr for Direction {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         Ok(match s.to_lowercase().trim() {
@@ -44,7 +34,7 @@ impl std::str::FromStr for Direction {
             "sw" => Direction::SouthWest,
             "s" => Direction::South,
             "se" => Direction::SouthEast,
-            _ => panic!("Bad direction"),
+            _ => return Err(anyhow!("Bad direction: '{}'", s)),
         })
     }
 }
@@ -54,7 +44,7 @@ fn axial_distance((aq, ar): (i64, i64), (bq, br): (i64, i64)) -> i64 {
 }
 
 fn main() -> Result<()> {
-    let input = std::fs::read_to_string("data/day11/input").context(Io)?;
+    let input = std::fs::read_to_string("data/day11/input")?;
     let directions = input
         .split(",")
         .map(|d| Ok(d.parse()?))

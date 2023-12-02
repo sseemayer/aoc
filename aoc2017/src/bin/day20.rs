@@ -1,30 +1,7 @@
 use std::collections::HashMap;
 
-use aoc::io::{read_lines, ReadLinesError};
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Error reading particle: '{}'", source))]
-    ReadLines { source: ReadLinesError<Particle> },
-}
-
-#[derive(Debug, Snafu)]
-enum ParseError {
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Bad particle: '{}", data))]
-    Bad { data: String },
-}
+use anyhow::{anyhow, Context, Result};
+use aoc::io::read_lines;
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 struct Vector {
@@ -40,26 +17,18 @@ impl std::fmt::Debug for Vector {
 }
 
 impl std::str::FromStr for Vector {
-    type Err = ParseError;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let tokens: Vec<&str> = s[1..s.len() - 1].split(",").collect();
 
         if tokens.len() != 3 {
-            return Err(ParseError::Bad {
-                data: s.to_string(),
-            });
+            return Err(anyhow!("Expected three dimensions: '{}'", s));
         }
 
-        let x: i64 = tokens[0].trim().parse().context(ParseInt {
-            data: tokens[0].to_string(),
-        })?;
-        let y: i64 = tokens[1].trim().parse().context(ParseInt {
-            data: tokens[1].to_string(),
-        })?;
-        let z: i64 = tokens[2].trim().parse().context(ParseInt {
-            data: tokens[2].to_string(),
-        })?;
+        let x: i64 = tokens[0].trim().parse().context("Parse X")?;
+        let y: i64 = tokens[1].trim().parse().context("Parse Y")?;
+        let z: i64 = tokens[2].trim().parse().context("Parse Z")?;
 
         Ok(Vector { x, y, z })
     }
@@ -85,12 +54,6 @@ impl std::ops::Sub for &Vector {
     }
 }
 
-impl Vector {
-    fn manhattan(&self) -> i64 {
-        self.x.abs() + self.y.abs() + self.z.abs()
-    }
-}
-
 #[derive(Clone)]
 struct Particle {
     pos: Vector,
@@ -99,15 +62,13 @@ struct Particle {
 }
 
 impl std::str::FromStr for Particle {
-    type Err = ParseError;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let tokens: Vec<&str> = s.trim().split(", ").collect();
 
         if tokens.len() != 3 {
-            return Err(ParseError::Bad {
-                data: s.to_string(),
-            });
+            return Err(anyhow!("Bad particle: '{}'", s));
         }
 
         let pos: Vector = tokens[0][2..].trim().parse()?;
@@ -136,7 +97,7 @@ impl Particle {
 }
 
 fn main() -> Result<()> {
-    let particles: Vec<Particle> = read_lines("data/day20/input").context(ReadLines)?;
+    let particles: Vec<Particle> = read_lines("data/day20/input").context("Reading particles")?;
 
     let mut state = particles.clone();
     for _ in 0..1000 {

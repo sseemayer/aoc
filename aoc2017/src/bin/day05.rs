@@ -1,18 +1,4 @@
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
+use anyhow::{Context, Result};
 
 fn run1(mut offsets: Vec<i64>) -> usize {
     let mut ic: i64 = 0;
@@ -44,14 +30,9 @@ fn run2(mut offsets: Vec<i64>) -> usize {
 }
 
 fn main() -> Result<()> {
-    let offsets: Vec<i64> = std::fs::read_to_string("data/day05/input")
-        .context(Io)?
+    let offsets: Vec<i64> = std::fs::read_to_string("data/day05/input")?
         .lines()
-        .map(|l| {
-            l.parse().context(ParseInt {
-                data: l.to_string(),
-            })
-        })
+        .map(|l| l.parse().context("Parse input ints"))
         .collect::<Result<_>>()?;
 
     println!("Part 1: {}", run1(offsets.clone()));

@@ -1,18 +1,4 @@
-use snafu::Snafu;
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-}
+use anyhow::Result;
 
 fn step1(vals: (usize, usize)) -> (usize, usize) {
     ((vals.0 * 16807) % 2147483647, (vals.1 * 48271) % 2147483647)

@@ -1,22 +1,5 @@
+use anyhow::{anyhow, Context, Result};
 use aoc::io::read_all;
-use snafu::{ResultExt, Snafu};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug, Snafu)]
-enum Error {
-    #[snafu(display("I/O error: {}", source))]
-    Io { source: std::io::Error },
-
-    #[snafu(display("Int format error for '{}': {}", data, source))]
-    ParseInt {
-        data: String,
-        source: std::num::ParseIntError,
-    },
-
-    #[snafu(display("Bad move: '{}", data))]
-    BadCommand { data: String },
-}
 
 #[derive(Debug, Clone)]
 enum Move {
@@ -26,47 +9,33 @@ enum Move {
 }
 
 impl std::str::FromStr for Move {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         let (cmd, rest) = s.trim().split_at(1);
 
         match cmd {
             "s" => {
-                let n: usize = rest.parse().context(ParseInt {
-                    data: rest.to_string(),
-                })?;
+                let n: usize = rest.parse().context("Parse s argument")?;
                 Ok(Move::Spin { n })
             }
             "x" => {
-                let (a, b) = rest.split_once("/").ok_or(Error::BadCommand {
-                    data: s.to_string(),
-                })?;
+                let (a, b) = rest.split_once("/").ok_or(anyhow!("Parse x command"))?;
 
-                let a: usize = a.parse().context(ParseInt {
-                    data: a.to_string(),
-                })?;
-                let b: usize = b.parse().context(ParseInt {
-                    data: b.to_string(),
-                })?;
+                let a: usize = a.parse().context("Parse first x argument")?;
+                let b: usize = b.parse().context("Parse second x argument")?;
 
                 Ok(Move::Exchange { a, b })
             }
             "p" => {
-                let (a, b) = rest.split_once("/").ok_or(Error::BadCommand {
-                    data: s.to_string(),
-                })?;
+                let (a, b) = rest.split_once("/").ok_or(anyhow!("Parse p commnad"))?;
 
                 Ok(Move::Partner {
                     a: a.to_string(),
                     b: b.to_string(),
                 })
             }
-            _ => {
-                return Err(Error::BadCommand {
-                    data: s.to_string(),
-                })
-            }
+            _ => return Err(anyhow!("Bad command: {}", s)),
         }
     }
 }
@@ -133,7 +102,7 @@ impl std::fmt::Display for State {
 
 fn main() -> Result<()> {
     let moves: Vec<Move> = read_all("data/day16/input")
-        .context(Io)?
+        .context("Read input")?
         .split(",")
         .map(|s| s.parse())
         .collect::<Result<Vec<Move>>>()?;

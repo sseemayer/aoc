@@ -1,4 +1,4 @@
-use thiserror::Error;
+use anyhow::{anyhow, Result};
 
 use std::{
     fs::File,
@@ -6,19 +6,7 @@ use std::{
     str::FromStr,
 };
 
-#[derive(Error, Debug)]
-pub enum ReadLinesError<T: FromStr>
-where
-    <T as FromStr>::Err: std::fmt::Debug + std::fmt::Display + std::error::Error,
-{
-    #[error("I/O error")]
-    Io(#[from] std::io::Error),
-
-    #[error(transparent)]
-    Parse(<T as FromStr>::Err),
-}
-
-pub fn read_all(path: &str) -> Result<String, std::io::Error> {
+pub fn read_all(path: &str) -> Result<String> {
     let mut file = File::open(path)?;
     let mut buf = String::new();
     file.read_to_string(&mut buf)?;
@@ -26,23 +14,23 @@ pub fn read_all(path: &str) -> Result<String, std::io::Error> {
     Ok(buf)
 }
 
-pub fn read_lines<T: FromStr>(path: &str) -> Result<Vec<T>, ReadLinesError<T>>
+pub fn read_lines<T: FromStr>(path: &str) -> Result<Vec<T>>
 where
-    <T as FromStr>::Err: std::fmt::Debug + std::fmt::Display + std::error::Error,
+    <T as FromStr>::Err: std::fmt::Display,
 {
     read_lines_reader(File::open(path)?)
 }
 
-pub fn read_lines_reader<T: FromStr, R: Read>(r: R) -> Result<Vec<T>, ReadLinesError<T>>
+pub fn read_lines_reader<T: FromStr, R: Read>(r: R) -> Result<Vec<T>>
 where
-    <T as FromStr>::Err: std::fmt::Debug + std::fmt::Display + std::error::Error,
+    <T as FromStr>::Err: std::fmt::Display,
 {
     read_lines_bufreader(BufReader::new(r))
 }
 
-pub fn read_lines_bufreader<T: FromStr, R: BufRead>(reader: R) -> Result<Vec<T>, ReadLinesError<T>>
+pub fn read_lines_bufreader<T: FromStr, R: BufRead>(reader: R) -> Result<Vec<T>>
 where
-    <T as FromStr>::Err: std::fmt::Debug + std::fmt::Display + std::error::Error,
+    <T as FromStr>::Err: std::fmt::Display,
 {
     reader
         .lines()
@@ -55,6 +43,6 @@ where
                 Some(l.to_owned())
             }
         })
-        .map(|l| <T as FromStr>::from_str(&l).map_err(|e| ReadLinesError::Parse(e)))
-        .collect::<Result<Vec<T>, ReadLinesError<T>>>()
+        .map(|l| <T as FromStr>::from_str(&l).map_err(|e| anyhow!("Parse error: {}", e)))
+        .collect::<Result<Vec<T>>>()
 }

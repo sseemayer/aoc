@@ -1,12 +1,10 @@
 use std::str::FromStr;
 
-use anyhow::{anyhow, bail, Context, Error, Result};
+use anyhow::{bail, Context, Error, Result};
 
 #[derive(Debug)]
 struct Sequence {
     numbers: Vec<isize>,
-
-    analyzed: Option<(usize, isize)>,
 }
 
 impl FromStr for Sequence {
@@ -18,10 +16,7 @@ impl FromStr for Sequence {
             .map(|n| n.parse().context("Parse sequence digits"))
             .collect::<Result<Vec<isize>>>()?;
 
-        Ok(Self {
-            numbers,
-            analyzed: None,
-        })
+        Ok(Self { numbers })
     }
 }
 

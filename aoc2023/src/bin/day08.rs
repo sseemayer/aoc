@@ -2,7 +2,7 @@ use std::{collections::HashMap, str::FromStr};
 
 use strum::{EnumIter, IntoEnumIterator};
 
-use anyhow::{anyhow, bail, Context, Error, Result};
+use anyhow::{anyhow, bail, Error, Result};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, EnumIter)]
 enum Instruction {

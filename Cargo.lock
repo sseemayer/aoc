@@ -163,6 +163,7 @@ dependencies = [
  "lazy_static",
  "num 0.4.0",
  "regex",
+ "strum",
  "thiserror",
 ]
 

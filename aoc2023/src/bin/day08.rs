@@ -134,23 +134,8 @@ impl Network {
         // this happened to be true for my input and will greatly simplify things
         assert_eq!(steps_to_first_goal, steps_to_cycle_goal);
 
-        Ok(lcm_multiple(&steps_to_first_goal[..]))
+        Ok(aoc::math::lcm_multiple(&steps_to_first_goal[..]))
     }
-}
-
-fn gcd(mut a: usize, mut b: usize) -> usize {
-    while b > 0 {
-        (a, b) = (b, a % b);
-    }
-    a
-}
-
-fn lcm(a: usize, b: usize) -> usize {
-    a * b / gcd(a, b)
-}
-
-fn lcm_multiple(n: &[usize]) -> usize {
-    n.iter().cloned().reduce(lcm).unwrap_or(0)
 }
 
 #[derive(Debug, Clone)]

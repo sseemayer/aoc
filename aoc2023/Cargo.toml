@@ -12,6 +12,8 @@ colored = "2"
 image = { version = "0.24.7", default-features = false, features = ["png"] }
 itertools = "0.10.5"
 lazy_static = "1"
+ndarray = "0.15.6"
+ndarray-linalg = { version = "0.16.0", features = ["openblas-system"] }
 num = "0.4.0"
 regex = "1"
 strum = { version = "0.24.1", features = ["derive"] }

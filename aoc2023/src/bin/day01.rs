@@ -60,7 +60,7 @@ fn get_calibration_value_words(line: &str) -> Result<u32> {
 }
 
 fn main() -> Result<()> {
-    let lines: Vec<String> = aoc::io::read_lines("data/day01/input")?;
+    let lines: Vec<String> = aoc::io::read_lines((2023, 1))?;
 
     let values: Vec<u32> = lines
         .iter()

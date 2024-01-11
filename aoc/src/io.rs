@@ -1,24 +1,25 @@
 use anyhow::{anyhow, Result};
 
 use std::{
-    fs::File,
     io::{BufRead, BufReader, Read},
     str::FromStr,
 };
 
-pub fn read_all(path: &str) -> Result<String> {
-    let mut file = File::open(path)?;
+use crate::input::InputSource;
+
+pub fn read_all<S: InputSource>(source: S) -> Result<String> {
+    let mut file = source.get_input()?;
     let mut buf = String::new();
     file.read_to_string(&mut buf)?;
 
     Ok(buf)
 }
 
-pub fn read_lines<T: FromStr>(path: &str) -> Result<Vec<T>>
+pub fn read_lines<T: FromStr, S: InputSource>(source: S) -> Result<Vec<T>>
 where
     <T as FromStr>::Err: std::fmt::Display,
 {
-    read_lines_reader(File::open(path)?)
+    read_lines_reader(source.get_input()?)
 }
 
 pub fn read_lines_reader<T: FromStr, R: Read>(r: R) -> Result<Vec<T>>

@@ -1,7 +1,4 @@
-use std::{
-    fs::File,
-    io::{Seek, Write},
-};
+use std::{fs::File, io::Write};
 
 use anyhow::{anyhow, Context, Result};
 use reqwest::header::{COOKIE, USER_AGENT};
@@ -25,6 +22,9 @@ impl InputSource for (usize, usize) {
         let &(year, day) = self;
 
         // try to obtain the input from the filesystem
+        let cache_folder = format!("data/day{:02}", day);
+        std::fs::create_dir_all(cache_folder)?;
+
         let cache_path = format!("data/day{:02}/input", day);
         if let Ok(file) = (cache_path.as_str()).get_input() {
             return Ok(file);
@@ -58,7 +58,9 @@ impl InputSource for (usize, usize) {
         file.write_all(content.as_bytes())
             .context("Write input to cache")?;
 
-        file.seek(std::io::SeekFrom::Start(0))?;
+        std::mem::forget(file);
+
+        let file = File::open(cache_path)?;
 
         Ok(file)
     }

@@ -11,6 +11,7 @@ aoc = { path = "../aoc/" }
 colored = "2"
 itertools = "0.13.0"
 lazy_static = "1"
+nalgebra = "0.33.2"
 num = "0.4.0"
 regex = "1"
 strum = { version = "0.24.1", features = ["derive"] }

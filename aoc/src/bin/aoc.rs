@@ -1,5 +1,5 @@
-use anyhow::{anyhow, Context, Result};
-use clap::{Args, Parser, Subcommand};
+use anyhow::Result;
+use clap::{Args, Parser};
 
 use aoc::config::Config;
 

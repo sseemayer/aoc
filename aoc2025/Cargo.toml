@@ -8,7 +8,9 @@ edition = "2024"
 [dependencies]
 anyhow = "1"
 aoc = { path = "../aoc/" }
+bit-set = "0.8.0"
 colored = "2"
+good_lp = { version = "1.14.2", features = ["scip", "scip_bundled"], default-features = false }
 lazy_static = "1"
 regex = "1"
 thiserror = "1"
